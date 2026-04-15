@@ -152,7 +152,7 @@
       <DockPanel Grid.Column="1" Background="#212121">
         <StackPanel DockPanel.Dock="Top" Margin="16 16 16 8" Spacing="12">
           <TextBlock Text="Collections" FontSize="14" FontWeight="SemiBold"/>
-          <TextBox Watermark="Filter" FontSize="12" Padding="8 6" CornerRadius="4"/>
+<TextBox PlaceholderText="Filter" FontSize="12" Padding="8 6" CornerRadius="4"/>
 
           <ScrollViewer>
             <ItemsControl ItemsSource="{Binding SavedRequests}">
@@ -206,7 +206,7 @@
                         FontWeight="SemiBold" FontSize="13"/>
               <TextBox Grid.Column="1"
                        Text="{Binding Url}"
-                       Watermark="Enter request URL"
+                       PlaceholderText="Enter request URL"
                        FontSize="13" CornerRadius="0" BorderThickness="0 1 0 1"/>
               <Button Grid.Column="2"
                       Content="Send"
@@ -219,9 +219,30 @@
 
         <Grid RowDefinitions="Auto,*,4,*">
           <Border Grid.Row="0" Margin="16 8 16 0" BorderBrush="#2B2B2B" BorderThickness="0 0 0 1">
-            <TabControl>
+            <TabControl SelectedIndex="{Binding RequestTabIndex}">
               <TabItem Header="Params"/>
-              <TabItem Header="Headers"/>
+              <TabItem Header="Headers">
+                <DockPanel Margin="16 8 16 0">
+                  <Button Classes="ghost" DockPanel.Dock="Top" Content="Add Header" 
+                          Command="{Binding AddHeaderCommand}" Padding="8 4" FontSize="12" Margin="0 0 0 8"/>
+                  <ScrollViewer>
+                    <ItemsControl ItemsSource="{Binding Headers}">
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:KeyValueItem">
+                          <Grid ColumnDefinitions="*,*,32" Margin="0 8" Height="32">
+                            <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" VerticalAlignment="Center" Margin="0 0 8 0" Width="20"/>
+                            <TextBox Grid.Column="0" Text="{Binding Key}" PlaceholderText="Header Name" Padding="4 6" Margin="24 0 4 0"/>
+                            <TextBox Grid.Column="1" Text="{Binding Value}" PlaceholderText="Header Value" Padding="4 6" Margin="4 0"/>
+                            <Button Grid.Column="2" Content="✕" Classes="ghost" 
+                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RemoveHeaderCommand}"
+                                    CommandParameter="{Binding}" FontSize="14" Padding="0" Margin="4 0 0 0"/>
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                  </ScrollViewer>
+                </DockPanel>
+              </TabItem>
               <TabItem Header="Body">
                 <TextBox Margin="0 8 0 0"
                          Text="{Binding RequestBody}"
@@ -247,22 +268,38 @@
                     <TextBlock Text="{Binding ElapsedMs, StringFormat='{}{0} ms'}" FontSize="12" Foreground="#0CBD66" FontWeight="SemiBold"/>
                   </StackPanel>
                 </StackPanel>
-                <TabControl>
+                <TabControl SelectedIndex="{Binding ResponseTabIndex}" Name="ResponseTabs">
                   <TabItem Header="Body"/>
                   <TabItem Header="Headers"/>
                 </TabControl>
               </DockPanel>
             </Border>
 
-            <TextBox Text="{Binding ResponseBody}"
-                     IsReadOnly="True"
-                     AcceptsReturn="True"
-                     FontFamily="Cascadia Code,Consolas,monospace"
-                     FontSize="13"
-                     Background="#212121"
-                     Foreground="#A2B4C3"
-                     BorderThickness="0"
-                     Padding="16"/>
+            <Grid RowDefinitions="*" ColumnDefinitions="*">
+              <TextBox Grid.Row="0" Text="{Binding ResponseBody}"
+                       IsReadOnly="True"
+                       AcceptsReturn="True"
+                       FontFamily="Cascadia Code,Consolas,monospace"
+                       FontSize="13"
+                       Background="#212121"
+                       Foreground="#A2B4C3"
+                       BorderThickness="0"
+                       Padding="16"
+                       Name="ResponseBodyView"/>
+              
+              <ScrollViewer Name="ResponseHeadersView" IsVisible="False">
+                <ItemsControl ItemsSource="{Binding ResponseHeaders}" Margin="16">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:KeyValueItem">
+                      <Grid ColumnDefinitions="200,*" Margin="0 8">
+                        <TextBlock Grid.Column="0" Text="{Binding Key}" Foreground="#A6A6A6" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="{Binding Value}" Foreground="#DEDEDE" TextWrapping="Wrap" VerticalAlignment="Center" Margin="12 0 0 0"/>
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+            </Grid>
           </DockPanel>
         </Grid>
       </DockPanel>

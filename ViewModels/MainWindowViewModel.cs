@@ -28,8 +28,12 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] long _elapsedMs;
     [ObservableProperty] string _responseSize = "";
     [ObservableProperty] bool _isBusy;
-
+    [ObservableProperty] int _requestTabIndex = 1;
+    [ObservableProperty] int _responseTabIndex = 0;
+    
+    public ObservableCollection<KeyValueItem> ResponseHeaders { get; } = new();
     public ObservableCollection<KeyValueItem> Headers { get; } = new();
+    public ObservableCollection<KeyValueItem> Params { get; } = new();
     public ObservableCollection<SavedRequest> SavedRequests { get; set; } = new();
     public List<string> Methods { get; } = new() { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" };
 
@@ -116,6 +120,16 @@ public partial class MainWindowViewModel : ViewModelBase
             ElapsedMs = resp.ElapsedMs;
             ResponseSize = FormatSize(resp.Body.Length);
             ResponseBody = PrettyJson(resp.Body);
+            
+            // Update response headers
+            ResponseHeaders.Clear();
+            foreach (var header in resp.Headers)
+            {
+                ResponseHeaders.Add(new KeyValueItem { Key = header.Key, Value = header.Value, Enabled = true });
+            }
+            
+            // Auto-save recently used request
+            await AutoSaveRecentRequestAsync();
         }
         catch (Exception ex)
         {
@@ -140,6 +154,30 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [RelayCommand] void AddHeader() => Headers.Add(new KeyValueItem { Enabled = true });
     [RelayCommand] void RemoveHeader(KeyValueItem item) => Headers.Remove(item);
+
+    private async Task AutoSaveRecentRequestAsync()
+    {
+        var existing = SavedRequests.FirstOrDefault(r => r.Url == Url && r.Method == Method);
+        if (existing == null)
+        {
+            SavedRequests.Insert(0, new SavedRequest 
+            { 
+                Name = Method,
+                Method = Method,
+                Url = Url,
+                Body = RequestBody 
+            });
+            
+            // Keep only last 20 recent requests
+            while (SavedRequests.Count > 20)
+            {
+                SavedRequests.RemoveAt(SavedRequests.Count - 1);
+            }
+        }
+
+        var json = JsonSerializer.Serialize(SavedRequests.ToList(), new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(_workspacePath, json);
+    }
 
     private string GetMethodColor(string method) => method switch
     {
