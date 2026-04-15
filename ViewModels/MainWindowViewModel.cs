@@ -3,11 +3,13 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using ApiClient.Models;
+using System.Net.Http;
 
 namespace ApiClient.ViewModels;
 
@@ -99,16 +101,50 @@ public partial class MainWindowViewModel : ViewModelBase
     [RelayCommand]
     private async Task SendAsync()
     {
-        if (string.IsNullOrWhiteSpace(Url)) return;
-        
-        IsBusy = true;
-        StatusText = "Sending...";
-        
         try
         {
-           
+            // Validate URL
+            if (string.IsNullOrWhiteSpace(Url))
+            {
+                StatusText = "Error: URL is required";
+                ResponseBody = JsonError("Validation Error", "Please enter a URL before sending a request");
+                OnPropertyChanged(nameof(HasResponse));
+                return;
+            }
+
+            if (!Uri.TryCreate(Url, UriKind.Absolute, out var uri))
+            {
+                StatusText = "Error: Invalid URL";
+                ResponseBody = JsonError("Validation Error", $"Invalid URL format: {Url}\n\nPlease enter a valid URL (e.g., https://api.example.com/endpoint)");
+                OnPropertyChanged(nameof(HasResponse));
+                return;
+            }
+
+            var validMethods = new[] { "GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS" };
+            if (!validMethods.Contains(Method))
+            {
+                StatusText = "Error: Invalid method";
+                ResponseBody = JsonError("Validation Error", $"Invalid HTTP method: {Method}");
+                OnPropertyChanged(nameof(HasResponse));
+                return;
+            }
+
+            IsBusy = true;
+            StatusText = "Sending...";
+
             var urlWithParams = BuildUrlWithParams(Url);
-            
+
+            if (!string.IsNullOrWhiteSpace(RequestBody) && Method is not "GET" and not "HEAD")
+            {
+                if (!IsValidJson(RequestBody))
+                {
+                    StatusText = "Error: Invalid JSON body";
+                    ResponseBody = JsonError("JSON Validation Error", "The request body contains invalid JSON.\n\nMake sure your JSON is properly formatted with valid syntax.");
+                    OnPropertyChanged(nameof(HasResponse));
+                    return;
+                }
+            }
+
             var req = new ApiRequest
             {
                 Method = Method,
@@ -118,31 +154,108 @@ public partial class MainWindowViewModel : ViewModelBase
             };
 
             var resp = await _http.SendAsync(req);
-            
-            StatusText = $"{resp.StatusCode} {resp.ReasonPhrase}";
-            ElapsedMs = (float)Math.Round(resp.ElapsedMs / 1.0, 1);
-            ResponseSize = FormatSize(resp.Body.Length);
-            ResponseBody = PrettyJson(resp.Body);
-            OnPropertyChanged(nameof(HasResponse)); // Ensure HasResponse updates when ResponseBody changes
-            
-            ResponseHeaders.Clear();
-            foreach (var header in resp.Headers)
+
+            // Check if response indicates an error
+            if (resp.StatusCode == 0)
             {
-                ResponseHeaders.Add(new KeyValueItem { Key = header.Key, Value = header.Value, Enabled = true });
+                // This is an error response from HttpService
+                StatusText = resp.ReasonPhrase;
+                ResponseBody = resp.Body;
+                ElapsedMs = resp.ElapsedMs;
             }
-          
+            else
+            {
+                // Successful response
+                var statusColor = GetStatusColor(resp.StatusCode);
+                StatusText = $"{resp.StatusCode} {resp.ReasonPhrase}";
+                ElapsedMs = resp.ElapsedMs;
+                ResponseSize = FormatSize(resp.Body.Length);
+                ResponseBody = resp.Body;
+
+                ResponseHeaders.Clear();
+                foreach (var header in resp.Headers)
+                {
+                    ResponseHeaders.Add(new KeyValueItem { Key = header.Key, Value = header.Value, Enabled = true });
+                }
+            }
+
+            OnPropertyChanged(nameof(HasResponse));
             await AutoSaveRecentRequestAsync();
+        }
+        catch (ArgumentNullException argNullEx)
+        {
+            StatusText = "Error: Null value";
+            ResponseBody = JsonError("Validation Error", $"Required field is missing: {argNullEx.ParamName}");
+            OnPropertyChanged(nameof(HasResponse));
+        }
+        catch (ArgumentException argEx)
+        {
+            StatusText = "Error: Invalid argument";
+            ResponseBody = JsonError("Validation Error", argEx.Message);
+            OnPropertyChanged(nameof(HasResponse));
+        }
+        catch (HttpRequestException httpEx)
+        {
+            StatusText = "Error: Network error";
+            ResponseBody = JsonError("Network Error", $"Failed to send request:\n{httpEx.Message}");
+            OnPropertyChanged(nameof(HasResponse));
+        }
+        catch (TaskCanceledException)
+        {
+            StatusText = "Error: Timeout";
+            ResponseBody = JsonError("Timeout Error", "The request took too long to complete (30 second timeout)");
+            OnPropertyChanged(nameof(HasResponse));
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "Error: Cancelled";
+            ResponseBody = JsonError("Request Cancelled", "The request was cancelled by the user");
+            OnPropertyChanged(nameof(HasResponse));
         }
         catch (Exception ex)
         {
-            StatusText = "Error";
-            ResponseBody = ex.Message;
+            StatusText = $"Error: {ex.GetType().Name}";
+            ResponseBody = JsonError("Unexpected Error", $"{ex.GetType().Name}: {ex.Message}\n\nStack trace:\n{ex.StackTrace}");
+            OnPropertyChanged(nameof(HasResponse));
         }
         finally
         {
             IsBusy = false;
         }
     }
+
+    private string GetStatusColor(int statusCode) => statusCode switch
+    {
+        >= 200 and < 300 => "#0CBD66",  // Green = success
+        >= 300 and < 400 => "#6DB3F2",  // Blue = redirect
+        >= 400 and < 500 => "#CE9178",  // Orange = client error
+        >= 500 => "#F48771",            // Red = server error
+        _ => "#D4D4D4"                  // Default
+    };
+
+    private bool IsValidJson(string json)
+    {
+        try
+        {
+            System.Text.Json.JsonDocument.Parse(json);
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private string JsonError(string title, string message) =>
+        $"{{\n  \"error\": \"{EscapeJson(title)}\",\n  \"message\": \"{EscapeJson(message)}\",\n  \"timestamp\": \"{DateTime.UtcNow:O}\"\n}}";
+
+    private string EscapeJson(string text) =>
+        text
+            .Replace("\\", "\\\\")
+            .Replace("\"", "\\\"")
+            .Replace("\n", "\\n")
+            .Replace("\r", "\\r")
+            .Replace("\t", "\\t");
 
     [RelayCommand]
     private void LoadRequest(SavedRequest request)

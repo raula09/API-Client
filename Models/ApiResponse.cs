@@ -7,5 +7,5 @@ public class ApiResponse
     public string ReasonPhrase { get; set; } = "";
     public string Body { get; set; } = "";
     public Dictionary<string, string> Headers { get; set; } = new();
-    public long ElapsedMs { get; set; }
+    public float ElapsedMs { get; set; }
 }
