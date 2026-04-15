@@ -12,12 +12,12 @@ public partial class MainWindow : Window
 
     private void WireUpTabHandlers()
     {
-        // Find the response TabControl and wire up the tab change event
+      
         if (this.FindControl<TabControl>("ResponseTabs") is { } responseTabs)
         {
             responseTabs.SelectionChanged += (s, e) =>
             {
-                var bodyView = this.FindControl<TextBox>("ResponseBodyView");
+                var bodyView = this.FindControl<JsonHighlightView>("ResponseBodyView");
                 var headersView = this.FindControl<ScrollViewer>("ResponseHeadersView");
                 
                 if (bodyView != null && headersView != null)
@@ -27,8 +27,8 @@ public partial class MainWindow : Window
                 }
             };
             
-            // Initialize visibility
-            var bodyView = this.FindControl<TextBox>("ResponseBodyView");
+           
+            var bodyView = this.FindControl<JsonHighlightView>("ResponseBodyView");
             var headersView = this.FindControl<ScrollViewer>("ResponseHeadersView");
             if (bodyView != null && headersView != null)
             {

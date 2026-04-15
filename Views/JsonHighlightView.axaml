@@ -1,0 +1,14 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ApiClient.Views.JsonHighlightView">
+  <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+    <ItemsControl Name="LinesControl" Margin="16">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate>
+          <!-- Lines are added programmatically as WrapPanel rows -->
+          <ContentPresenter Content="{Binding}"/>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </ScrollViewer>
+</UserControl>

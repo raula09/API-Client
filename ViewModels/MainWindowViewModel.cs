@@ -25,7 +25,7 @@ public partial class MainWindowViewModel : ViewModelBase
     [ObservableProperty] string _activeTabLabel = "New Request";
     [ObservableProperty] string _activeMethodLabel = "GET";
     [ObservableProperty] string _activeMethodColor = "#0CBD66";
-    [ObservableProperty] long _elapsedMs;
+    [ObservableProperty] float _elapsedMs; // Changed type from long to float
     [ObservableProperty] string _responseSize = "";
     [ObservableProperty] bool _isBusy;
     [ObservableProperty] int _requestTabIndex = 1;
@@ -106,7 +106,7 @@ public partial class MainWindowViewModel : ViewModelBase
         
         try
         {
-            // Build URL with query parameters
+           
             var urlWithParams = BuildUrlWithParams(Url);
             
             var req = new ApiRequest
@@ -120,9 +120,10 @@ public partial class MainWindowViewModel : ViewModelBase
             var resp = await _http.SendAsync(req);
             
             StatusText = $"{resp.StatusCode} {resp.ReasonPhrase}";
-            ElapsedMs = resp.ElapsedMs;
+            ElapsedMs = (float)Math.Round(resp.ElapsedMs / 1.0, 1);
             ResponseSize = FormatSize(resp.Body.Length);
             ResponseBody = PrettyJson(resp.Body);
+            OnPropertyChanged(nameof(HasResponse)); // Ensure HasResponse updates when ResponseBody changes
             
             ResponseHeaders.Clear();
             foreach (var header in resp.Headers)

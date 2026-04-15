@@ -2,6 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ApiClient.ViewModels"
         xmlns:models="using:ApiClient.Models"
+        xmlns:views="using:ApiClient.Views"
         x:Class="ApiClient.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
         x:Name="Root"
@@ -144,7 +145,7 @@
       <Border Grid.Column="0" Background="#2B2B2B" BorderBrush="#1E1E1E" BorderThickness="0 0 1 0">
         <StackPanel Spacing="8" Margin="0 12 0 0" HorizontalAlignment="Center">
           <Button Classes="navIcon"><TextBlock Text="☰" FontSize="18" Foreground="#A6A6A6"/></Button>
-          <Button Classes="navIcon"><TextBlock Text="📁" FontSize="16" Foreground="#A6A6A6"/></Button>
+          <Button Classes="navIcon"><TextBlock Text="⚙️" FontSize="16" Foreground="#A6A6A6"/></Button>
           <Button Classes="navIcon"><TextBlock Text="⏱" FontSize="16" Foreground="#A6A6A6"/></Button>
         </StackPanel>
       </Border>
@@ -277,9 +278,13 @@
           <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="#2B2B2B" HorizontalAlignment="Stretch" Margin="0 8"/>
 
           <DockPanel Grid.Row="3" Background="#212121">
-            <Border DockPanel.Dock="Top" Margin="16 0" BorderBrush="#2B2B2B" BorderThickness="0 0 0 1">
-              <DockPanel>
-                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0 0 0 8">
+            <Border DockPanel.Dock="Top" Margin="16 0" BorderBrush="#2B2B2B" BorderThickness="0 0 0 1" Padding="0 8">
+              <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto">
+                <TabControl Grid.Row="0" Grid.Column="0" SelectedIndex="{Binding ResponseTabIndex}" Name="ResponseTabs">
+                  <TabItem Header="Body"/>
+                  <TabItem Header="Headers"/>
+                </TabControl>
+                <StackPanel Grid.Row="0" Grid.Column="1" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="16 0 0 0">
                   <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding HasResponse}">
                     <TextBlock Text="Status:" FontSize="12" Foreground="#888888"/>
                     <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#0CBD66" FontWeight="SemiBold"/>
@@ -288,25 +293,19 @@
                     <TextBlock Text="Time:" FontSize="12" Foreground="#888888"/>
                     <TextBlock Text="{Binding ElapsedMs, StringFormat='{}{0} ms'}" FontSize="12" Foreground="#0CBD66" FontWeight="SemiBold"/>
                   </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding HasResponse}">
+                    <TextBlock Text="Size:" FontSize="12" Foreground="#888888"/>
+                    <TextBlock Text="{Binding ResponseSize}" FontSize="12" Foreground="#0CBD66" FontWeight="SemiBold"/>
+                  </StackPanel>
                 </StackPanel>
-                <TabControl SelectedIndex="{Binding ResponseTabIndex}" Name="ResponseTabs">
-                  <TabItem Header="Body"/>
-                  <TabItem Header="Headers"/>
-                </TabControl>
-              </DockPanel>
+              </Grid>
             </Border>
 
             <Grid RowDefinitions="*" ColumnDefinitions="*">
-              <TextBox Grid.Row="0" Text="{Binding ResponseBody}"
-                       IsReadOnly="True"
-                       AcceptsReturn="True"
-                       FontFamily="Cascadia Code,Consolas,monospace"
-                       FontSize="13"
-                       Background="#212121"
-                       Foreground="#A2B4C3"
-                       BorderThickness="0"
-                       Padding="16"
-                       Name="ResponseBodyView"/>
+              <views:JsonHighlightView Grid.Row="0"
+                                       Name="ResponseBodyView"
+                                       JsonText="{Binding ResponseBody}"
+                                       Background="#1e1e1e"/>
               
               <ScrollViewer Name="ResponseHeadersView" IsVisible="False">
                 <ItemsControl ItemsSource="{Binding ResponseHeaders}" Margin="16">

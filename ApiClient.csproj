@@ -12,6 +12,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Page Include="Views/MainWindow.axaml" />
+    <Page Include="Views/JsonHighlightView.axaml" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.0.1" />
     <PackageReference Include="Avalonia.Desktop" Version="12.0.1" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.1" />
