@@ -106,10 +106,13 @@ public partial class MainWindowViewModel : ViewModelBase
         
         try
         {
+            // Build URL with query parameters
+            var urlWithParams = BuildUrlWithParams(Url);
+            
             var req = new ApiRequest
             {
                 Method = Method,
-                Url = Url,
+                Url = urlWithParams,
                 Headers = Headers.Where(h => !string.IsNullOrEmpty(h.Key)).ToList(),
                 Body = RequestBody
             };
@@ -121,14 +124,12 @@ public partial class MainWindowViewModel : ViewModelBase
             ResponseSize = FormatSize(resp.Body.Length);
             ResponseBody = PrettyJson(resp.Body);
             
-            // Update response headers
             ResponseHeaders.Clear();
             foreach (var header in resp.Headers)
             {
                 ResponseHeaders.Add(new KeyValueItem { Key = header.Key, Value = header.Value, Enabled = true });
             }
-            
-            // Auto-save recently used request
+          
             await AutoSaveRecentRequestAsync();
         }
         catch (Exception ex)
@@ -168,7 +169,6 @@ public partial class MainWindowViewModel : ViewModelBase
                 Body = RequestBody 
             });
             
-            // Keep only last 20 recent requests
             while (SavedRequests.Count > 20)
             {
                 SavedRequests.RemoveAt(SavedRequests.Count - 1);
@@ -177,6 +177,22 @@ public partial class MainWindowViewModel : ViewModelBase
 
         var json = JsonSerializer.Serialize(SavedRequests.ToList(), new JsonSerializerOptions { WriteIndented = true });
         await File.WriteAllTextAsync(_workspacePath, json);
+    }
+
+    [RelayCommand] void AddParam() => Params.Add(new KeyValueItem { Enabled = true });
+    [RelayCommand] void RemoveParam(KeyValueItem item) => Params.Remove(item);
+
+    private string BuildUrlWithParams(string baseUrl)
+    {
+        var enabledParams = Params.Where(p => p.Enabled && !string.IsNullOrWhiteSpace(p.Key)).ToList();
+        if (enabledParams.Count == 0) return baseUrl;
+
+        var queryString = string.Join("&", 
+            enabledParams.Select(p => 
+                $"{Uri.EscapeDataString(p.Key)}={Uri.EscapeDataString(p.Value ?? "")}"));
+        
+        var separator = baseUrl.Contains("?") ? "&" : "?";
+        return $"{baseUrl}{separator}{queryString}";
     }
 
     private string GetMethodColor(string method) => method switch
