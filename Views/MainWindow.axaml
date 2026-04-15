@@ -1,66 +1,271 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:ApiClient.ViewModels"
+        xmlns:models="using:ApiClient.Models"
         x:Class="ApiClient.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        xmlns:models="using:ApiClient.Models"
-        Title="ApiClient" Width="900" Height="650"
-        x:Name="Root">
+        x:Name="Root"
+        Title="ApiClient"
+        Width="1280" Height="800"
+        Background="#212121">
 
-  <DockPanel Margin="12">
+  <Window.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="#DEDEDE"/>
+    </Style>
 
-    <!-- Top bar: method + URL + send -->
-    <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0 0 0 12">
-      <ComboBox ItemsSource="{Binding Methods}" SelectedItem="{Binding Method}" Width="110"/>
-      <TextBox Text="{Binding Url}" Watermark="https://api.example.com/endpoint"
-               HorizontalAlignment="Stretch" Width="560"/>
-      <Button Content="Send" Command="{Binding SendCommand}" IsEnabled="{Binding !IsBusy}"/>
-    </StackPanel>
+    <Style Selector="TextBox">
+      <Setter Property="Background" Value="#2B2B2B"/>
+      <Setter Property="Foreground" Value="#DEDEDE"/>
+      <Setter Property="BorderBrush" Value="#404040"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="10 8"/>
+      <Setter Property="CaretBrush" Value="#DEDEDE"/>
+      <Setter Property="SelectionBrush" Value="#0065D960"/>
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="#404040"/>
+    </Style>
 
-    <!-- Status bar -->
-    <TextBlock DockPanel.Dock="Top" Text="{Binding StatusText}"
-               Margin="0 0 0 8" FontSize="12" Foreground="Gray"/>
+    <Style Selector="ComboBox">
+      <Setter Property="Background" Value="#2B2B2B"/>
+      <Setter Property="Foreground" Value="#DEDEDE"/>
+      <Setter Property="BorderBrush" Value="#404040"/>
+      <Setter Property="BorderThickness" Value="1"/>
+      <Setter Property="CornerRadius" Value="4 0 0 4"/>
+      <Setter Property="Padding" Value="12 8"/>
+    </Style>
 
-    <!-- Main split: request left, response right -->
-    <Grid ColumnDefinitions="*,8,*">
+    <Style Selector="Button.send">
+      <Setter Property="Background" Value="#0065D9"/>
+      <Setter Property="Foreground" Value="#FFFFFF"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="Padding" Value="32 0"/>
+      <Setter Property="CornerRadius" Value="0 4 4 0"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.send:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#0052B3"/>
+    </Style>
+    <Style Selector="Button.send:disabled /template/ ContentPresenter">
+      <Setter Property="Background" Value="#404040"/>
+      <Setter Property="TextElement.Foreground" Value="#888888"/>
+    </Style>
 
-      <!-- Request panel -->
-      <TabControl Grid.Column="0">
-        <TabItem Header="Headers">
+    <Style Selector="Button.ghost">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#A6A6A6"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Padding" Value="10 6"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="SemiBold"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.ghost:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#2B2B2B"/>
+      <Setter Property="TextElement.Foreground" Value="#DEDEDE"/>
+    </Style>
+
+    <Style Selector="TabControl">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Padding" Value="0"/>
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="Foreground" Value="#A6A6A6"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="FontWeight" Value="Medium"/>
+      <Setter Property="Padding" Value="0 12"/>
+      <Setter Property="Margin" Value="0 0 24 0"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0 0 0 2"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="TabItem:pointerover">
+      <Setter Property="Foreground" Value="#DEDEDE"/>
+    </Style>
+    <Style Selector="TabItem:selected">
+      <Setter Property="Foreground" Value="#DEDEDE"/>
+      <Setter Property="BorderBrush" Value="#FF6C37"/>
+    </Style>
+
+    <Style Selector="Button.sidebarItem">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="#DEDEDE"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="12 6"/>
+      <Setter Property="HorizontalContentAlignment" Value="Left"/>
+      <Setter Property="FontSize" Value="13"/>
+      <Setter Property="CornerRadius" Value="4"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+    <Style Selector="Button.sidebarItem:pointerover /template/ ContentPresenter">
+      <Setter Property="Background" Value="#333333"/>
+    </Style>
+
+    <Style Selector="Button.navIcon">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="CornerRadius" Value="8"/>
+      <Setter Property="Cursor" Value="Hand"/>
+    </Style>
+  </Window.Styles>
+
+  <Grid RowDefinitions="Auto,*">
+
+    <Border Grid.Row="0" Background="#212121" BorderBrush="#2B2B2B" BorderThickness="0 0 0 1" Padding="16 8">
+      <DockPanel>
+        <StackPanel Orientation="Horizontal" Spacing="16" DockPanel.Dock="Left" VerticalAlignment="Center">
+          <Border Background="#FF6C37" CornerRadius="4" Width="24" Height="24">
+            <TextBlock Text="P" FontWeight="Bold" FontSize="14" Foreground="White"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+          <TextBlock Text="Workspaces" FontWeight="Medium" FontSize="13" Foreground="#A6A6A6" VerticalAlignment="Center"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Spacing="12" DockPanel.Dock="Right" VerticalAlignment="Center">
+          <Border Background="#2B2B2B" CornerRadius="4" BorderBrush="#404040" BorderThickness="1" Padding="12 6" Width="200">
+            <TextBlock Text="Search Workspace" FontSize="12" Foreground="#888888"/>
+          </Border>
+          <Border Background="#FF6C37" CornerRadius="20" Width="28" Height="28">
+            <TextBlock Text="U" FontWeight="Medium" FontSize="12" Foreground="White"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
+        </StackPanel>
+      </DockPanel>
+    </Border>
+
+    <Grid Grid.Row="1" ColumnDefinitions="52,260,1,*">
+
+      <Border Grid.Column="0" Background="#2B2B2B" BorderBrush="#1E1E1E" BorderThickness="0 0 1 0">
+        <StackPanel Spacing="8" Margin="0 12 0 0" HorizontalAlignment="Center">
+          <Button Classes="navIcon"><TextBlock Text="☰" FontSize="18" Foreground="#A6A6A6"/></Button>
+          <Button Classes="navIcon"><TextBlock Text="📁" FontSize="16" Foreground="#A6A6A6"/></Button>
+          <Button Classes="navIcon"><TextBlock Text="⏱" FontSize="16" Foreground="#A6A6A6"/></Button>
+        </StackPanel>
+      </Border>
+
+      <DockPanel Grid.Column="1" Background="#212121">
+        <StackPanel DockPanel.Dock="Top" Margin="16 16 16 8" Spacing="12">
+          <TextBlock Text="Collections" FontSize="14" FontWeight="SemiBold"/>
+          <TextBox Watermark="Filter" FontSize="12" Padding="8 6" CornerRadius="4"/>
+
+          <ScrollViewer>
+            <ItemsControl ItemsSource="{Binding SavedRequests}">
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="models:SavedRequest">
+                  <Button Classes="sidebarItem" 
+                          HorizontalAlignment="Stretch" 
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).LoadRequestCommand}"
+                          CommandParameter="{Binding}">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <TextBlock Text="{Binding Method}" FontSize="10" FontWeight="Bold" Width="35" VerticalAlignment="Center"/>
+                      <TextBlock Text="{Binding Name}" FontSize="12" Foreground="#A6A6A6" VerticalAlignment="Center"/>
+                    </StackPanel>
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </StackPanel>
+      </DockPanel>
+
+      <Border Grid.Column="2" Background="#2B2B2B"/>
+
+      <DockPanel Grid.Column="3" Background="#212121">
+
+        <Border DockPanel.Dock="Top" BorderBrush="#2B2B2B" BorderThickness="0 0 0 1">
+          <StackPanel Orientation="Horizontal">
+            <Border BorderBrush="#FF6C37" BorderThickness="0 2 0 0" Background="#212121" Padding="16 10">
+              <StackPanel Orientation="Horizontal" Spacing="8">
+                <TextBlock Text="{Binding ActiveMethodLabel}" FontSize="11" FontWeight="SemiBold"
+                           Foreground="{Binding ActiveMethodColor}" VerticalAlignment="Center"/>
+                <TextBlock Text="{Binding ActiveTabLabel}" FontSize="13" Foreground="#DEDEDE" VerticalAlignment="Center"/>
+                <TextBlock Text="×" FontSize="16" Foreground="#A6A6A6" Margin="8 0 0 0" VerticalAlignment="Center"/>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <Border DockPanel.Dock="Top" Padding="16 16 16 8">
           <DockPanel>
-            <Button DockPanel.Dock="Bottom" Content="+ Add header"
-                    Command="{Binding AddHeaderCommand}" Margin="0 6 0 0"/>
-            <ScrollViewer>
-              <ItemsControl ItemsSource="{Binding Headers}">
-                <ItemsControl.ItemTemplate>
-                  <DataTemplate x:DataType="models:KeyValueItem">
-                    <Grid ColumnDefinitions="32,*,8,*,32" Margin="0 3">
-                      <CheckBox Grid.Column="0" IsChecked="{Binding Enabled}" VerticalAlignment="Center"/>
-                      <TextBox Grid.Column="1" Text="{Binding Key}"   Watermark="Key"/>
-                      <TextBox Grid.Column="3" Text="{Binding Value}" Watermark="Value"/>
-                      <Button  Grid.Column="4" Content="×"
-                               CommandParameter="{Binding}"
-                               Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).RemoveHeaderCommand}"/>
-                    </Grid>
-                  </DataTemplate>
-                </ItemsControl.ItemTemplate>
-              </ItemsControl>
-            </ScrollViewer>
+            <Button Content="Save" 
+                    Classes="ghost" 
+                    DockPanel.Dock="Right" 
+                    Margin="12 0 0 0" 
+                    Command="{Binding SaveRequestCommand}"/>
+            
+            <Grid ColumnDefinitions="110,*,100" Height="40">
+              <ComboBox Grid.Column="0"
+                        ItemsSource="{Binding Methods}"
+                        SelectedItem="{Binding Method}"
+                        FontWeight="SemiBold" FontSize="13"/>
+              <TextBox Grid.Column="1"
+                       Text="{Binding Url}"
+                       Watermark="Enter request URL"
+                       FontSize="13" CornerRadius="0" BorderThickness="0 1 0 1"/>
+              <Button Grid.Column="2"
+                      Content="Send"
+                      Classes="send"
+                      Command="{Binding SendCommand}"
+                      IsEnabled="{Binding CanSend}"/>
+            </Grid>
           </DockPanel>
-        </TabItem>
-        <TabItem Header="Body">
-          <TextBox Text="{Binding RequestBody}" AcceptsReturn="True"
-                   FontFamily="Cascadia Code,Consolas,monospace" FontSize="13"
-                   TextWrapping="Wrap" VerticalAlignment="Stretch"/>
-        </TabItem>
-      </TabControl>
+        </Border>
 
-      <GridSplitter Grid.Column="1" ResizeDirection="Columns"/>
+        <Grid RowDefinitions="Auto,*,4,*">
+          <Border Grid.Row="0" Margin="16 8 16 0" BorderBrush="#2B2B2B" BorderThickness="0 0 0 1">
+            <TabControl>
+              <TabItem Header="Params"/>
+              <TabItem Header="Headers"/>
+              <TabItem Header="Body">
+                <TextBox Margin="0 8 0 0"
+                         Text="{Binding RequestBody}"
+                         AcceptsReturn="True"
+                         FontFamily="Cascadia Code,Consolas,monospace"
+                         FontSize="13" MinHeight="100"/>
+              </TabItem>
+            </TabControl>
+          </Border>
 
-      <!-- Response panel -->
-      <TextBox Grid.Column="2" Text="{Binding ResponseBody}" IsReadOnly="True"
-               AcceptsReturn="True" TextWrapping="Wrap"
-               FontFamily="Cascadia Code,Consolas,monospace" FontSize="13"/>
+          <GridSplitter Grid.Row="2" ResizeDirection="Rows" Background="#2B2B2B" HorizontalAlignment="Stretch" Margin="0 8"/>
+
+          <DockPanel Grid.Row="3" Background="#212121">
+            <Border DockPanel.Dock="Top" Margin="16 0" BorderBrush="#2B2B2B" BorderThickness="0 0 0 1">
+              <DockPanel>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" Margin="0 0 0 8">
+                  <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding HasResponse}">
+                    <TextBlock Text="Status:" FontSize="12" Foreground="#888888"/>
+                    <TextBlock Text="{Binding StatusText}" FontSize="12" Foreground="#0CBD66" FontWeight="SemiBold"/>
+                  </StackPanel>
+                  <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding HasResponse}">
+                    <TextBlock Text="Time:" FontSize="12" Foreground="#888888"/>
+                    <TextBlock Text="{Binding ElapsedMs, StringFormat='{}{0} ms'}" FontSize="12" Foreground="#0CBD66" FontWeight="SemiBold"/>
+                  </StackPanel>
+                </StackPanel>
+                <TabControl>
+                  <TabItem Header="Body"/>
+                  <TabItem Header="Headers"/>
+                </TabControl>
+              </DockPanel>
+            </Border>
+
+            <TextBox Text="{Binding ResponseBody}"
+                     IsReadOnly="True"
+                     AcceptsReturn="True"
+                     FontFamily="Cascadia Code,Consolas,monospace"
+                     FontSize="13"
+                     Background="#212121"
+                     Foreground="#A2B4C3"
+                     BorderThickness="0"
+                     Padding="16"/>
+          </DockPanel>
+        </Grid>
+      </DockPanel>
     </Grid>
-  </DockPanel>
+  </Grid>
 </Window>

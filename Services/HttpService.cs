@@ -9,7 +9,10 @@ namespace ApiClient;
 
 public class HttpService
 {
-    private readonly HttpClient _client = new();
+    private readonly HttpClient _client = new(new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = (_, _, _, _) => true
+    });
 
     public async Task<ApiResponse> SendAsync(ApiRequest req)
     {
